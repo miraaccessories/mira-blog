@@ -179,7 +179,10 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
 <body>
 <header class="site-header">
   <div class="site-header__inner">
-    <a class="site-logo" href="/"><span class="site-logo__name">Mira Accessories</span><span class="site-logo__sub">The SA Mom's Hair Guide</span></a>
+    <a class="site-logo" href="/">
+      <img src="https://static.wixstatic.com/media/4b2909_39f0afa2861e46fdb0af74a03c157a27~mv2.png/v1/crop/x_0,y_519,w_1563,h_525/fill/w_268,h_91,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Pink%20Watercolour%20Flower%20Shop%20Logo.png"
+           alt="Mira Accessories" height="50">
+    </a>
     <nav class="site-nav" id="site-nav">{nav}</nav>
     <form class="header-search" id="header-search-form" role="search">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
