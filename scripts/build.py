@@ -51,6 +51,7 @@ def load_posts():
                     meta[k.strip()] = v.strip()
         meta['tags']     = [t.strip() for t in meta.get('tags','').split(',') if t.strip()]
         meta['keywords'] = [k.strip() for k in meta.get('keywords','').split(',') if k.strip()]
+        meta['featured'] = meta.get('featured','').strip().lower() in ('true','1','yes')
         body = re.sub(r'<!--META\n.*?-->', '', raw, flags=re.DOTALL).strip()
         excerpt = meta.get('excerpt', re.sub(r'<[^>]+>','',body)[:160].strip()+'...')
         posts.append({**meta, 'slug': f.stem, 'url': f'/posts/{f.stem}/',
@@ -147,7 +148,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
     nav = '\n'.join(f'<a href="{u}">{l}</a>' for l,u in [
         ('All Posts','/posts/'),('School Hair','/category/school-hair/'),
         ('Baby Care','/category/baby-care/'),('Gift Ideas','/category/gift-ideas/'),
-        ('Mom &amp; Baby','/category/mom-and-baby/'),('Photoshoots','/category/photoshoots/'),
+        ('Mom &amp; Baby','/category/mom-baby/'),('Photoshoots','/category/photoshoots/'),
     ])
     footer_cats = ''.join(f'<a href="/category/{slugify(c)}/">{c}</a>' for c in cats)
     year = datetime.now().year
@@ -201,7 +202,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
 <div class="search-overlay" id="search-overlay" role="dialog" aria-label="Search">
   <button class="search-close" data-search-close aria-label="Close">✕</button>
   <div class="search-box">
-    <input class="search-input-large" id="search-input-large" type="search" placeholder="Search articles, tips, products..." autofocus>
+    <input class="search-input-large" id="search-input-large" type="search" placeholder="Search articles, tips, products...">
     <div class="search-results" id="search-results"></div>
   </div>
 </div>
@@ -235,8 +236,8 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
 
 # ── BUILDERS ─────────────────────────────────────────
 def build_home(posts, dist):
-    feat = posts[0] if posts else None
-    rest = posts[1:10]
+    feat = next((p for p in posts if p.get('featured')), posts[0] if posts else None)
+    rest = [p for p in posts if p is not feat][:9]
     cats = {}
     for p in posts:
         c = p.get('category','')
