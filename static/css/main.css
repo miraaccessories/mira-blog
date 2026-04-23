@@ -336,6 +336,7 @@ a { color: inherit; text-decoration: none; }
 .featured-post__image {
   aspect-ratio: 4/3;
   object-fit: cover;
+  object-position: center top;
   width: 100%;
   height: 100%;
 }
