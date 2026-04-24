@@ -7,9 +7,17 @@ Run: python3 scripts/build.py
 Output: dist/
 """
 
-import json, os, re, shutil, sys
+import hashlib, json, os, re, shutil, sys
 from datetime import datetime
 from pathlib import Path
+
+
+def _file_hash(p):
+    """Short MD5 of file content for cache-busting query strings."""
+    try:
+        return hashlib.md5(Path(p).read_bytes()).hexdigest()[:8]
+    except FileNotFoundError:
+        return "0"
 
 
 def _load_env():
@@ -241,7 +249,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/main.css?v={CSS_HASH}">
 {ga4}
 {extra}
 </head>
@@ -293,7 +301,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
   </div>
 </footer>
 <script>{search_idx(posts)}</script>
-<script src="/js/search.js"></script>
+<script src="/js/search.js?v={JS_HASH}"></script>
 </body>
 </html>'''
 
@@ -685,7 +693,10 @@ def build():
     if DIST_DIR.exists(): shutil.rmtree(DIST_DIR)
     DIST_DIR.mkdir(parents=True)
     shutil.copytree(STATIC_DIR, DIST_DIR, dirs_exist_ok=True)
-    print('  Copied static assets')
+    global CSS_HASH, JS_HASH
+    CSS_HASH = _file_hash(STATIC_DIR / "css" / "main.css")
+    JS_HASH  = _file_hash(STATIC_DIR / "js" / "search.js")
+    print(f'  Copied static assets (css {CSS_HASH}, js {JS_HASH})')
     posts = load_posts()
     print(f'  Loaded {len(posts)} posts')
     if not posts:
