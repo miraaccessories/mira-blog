@@ -17,8 +17,9 @@ posts/drafts/
 # Editorial / strategy docs — keep local, don't expose on public repo
 CLAUDE.md
 
-# Scraped Wix product catalogue — derived, regenerate as needed
+# Scraped Wix product catalogue + assignment maps — derived, regenerate as needed
 product_catalogue.json
+*_assignments.json
 
 # Claude Code workspace — local tooling, memory, slash commands
 .claude/
