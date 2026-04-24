@@ -2,4 +2,20 @@ dist/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Secrets — never commit
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Drafts — stay local until ready to publish
+posts/drafts/
+
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+Thumbs.db

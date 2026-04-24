@@ -7,15 +7,44 @@ Run: python3 scripts/build.py
 Output: dist/
 """
 
-import json, re, shutil
+import json, os, re, shutil
 from datetime import datetime
 from pathlib import Path
+
+
+def _load_env():
+    env_path = Path(__file__).parent.parent / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+_load_env()
 
 SITE = {
     "name":        "Mira Accessories Blog",
     "url":         "https://blog.miraaccessories.co.za",
     "shop_url":    "https://www.miraaccessories.co.za",
     "description": "Expert advice on baby and toddler hair care, styling tips, and the best hair accessories for South African moms.",
+    "locale":      "en-ZA",
+    "country":     "ZA",
+    "ga4_id":      os.environ.get("MIRA_GA4_ID", ""),
+    "gsc_verify":  os.environ.get("MIRA_GSC_VERIFY", ""),
+    "instagram":   os.environ.get("MIRA_INSTAGRAM", "https://www.instagram.com/miraaccessories.co.za/"),
+    "facebook":    os.environ.get("MIRA_FACEBOOK", ""),
+}
+
+AUTHOR = {
+    "name":  "Shaveta V Sahoo",
+    "title": "Co-founder, Mira Accessories",
+    "bio":   "Shaveta V Sahoo is the co-founder of Mira Accessories, South Africa's premium baby hair accessory brand. An engineer by training and a mom by calling, she designs accessories that are safe, gentle, and made to last — and writes for South African moms navigating the messy, magical years of raising little girls.",
+    "byline_bio": "Mom to a little girl, engineer, and co-founder of Mira Accessories. Writing from Johannesburg about the small, sacred parts of raising a daughter.",
+    "url":   "/about/",
+    "image": "",
 }
 
 ROOT, POSTS_DIR, STATIC_DIR, DIST_DIR = (
@@ -153,20 +182,32 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
     footer_cats = ''.join(f'<a href="/category/{slugify(c)}/">{c}</a>' for c in cats)
     year = datetime.now().year
 
+    gsc  = f'<meta name="google-site-verification" content="{SITE["gsc_verify"]}">' if SITE.get("gsc_verify") else ''
+    ga4  = (f'<script async src="https://www.googletagmanager.com/gtag/js?id={SITE["ga4_id"]}"></script>'
+            f'<script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments);}}gtag("js",new Date());gtag("config","{SITE["ga4_id"]}");</script>') if SITE.get("ga4_id") else ''
     return f'''<!DOCTYPE html>
-<html lang="en">
+<html lang="{SITE["locale"]}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="{SITE["url"]}{canonical}">
+<link rel="alternate" hreflang="en-za" href="{SITE["url"]}{canonical}">
+<link rel="alternate" hreflang="x-default" href="{SITE["url"]}{canonical}">
+<meta name="geo.region" content="ZA">
+<meta name="geo.placename" content="South Africa">
+<meta http-equiv="content-language" content="en-ZA">
+{gsc}
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="shortcut icon" type="image/png" href="/images/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="{esc(SITE["name"])}" href="{SITE["url"]}/feed.xml">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="en_ZA">
+<meta property="og:site_name" content="{esc(SITE["name"])}">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:image" content="{og_img}">
@@ -179,6 +220,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/main.css">
+{ga4}
 {extra}
 </head>
 <body>
@@ -276,11 +318,51 @@ def build_home(posts, dist):
   </div>
 </section>'''
 
+    same_as = [u for u in [SITE.get("instagram"), SITE.get("facebook")] if u]
+    org_schema = {"@context":"https://schema.org","@type":"Organization",
+        "name":"Mira Accessories","url":SITE["shop_url"],
+        "logo":"https://static.wixstatic.com/media/4b2909_39f0afa2861e46fdb0af74a03c157a27~mv2.png",
+        "description":"South Africa's premium baby and toddler hair accessories brand.",
+        "areaServed":{"@type":"Country","name":"South Africa"},
+        "sameAs":same_as}
+    website_schema = {"@context":"https://schema.org","@type":"WebSite",
+        "name":SITE["name"],"url":SITE["url"],"inLanguage":SITE["locale"],
+        "potentialAction":{"@type":"SearchAction",
+            "target":f"{SITE['url']}/posts/?q={{search_term_string}}",
+            "query-input":"required name=search_term_string"}}
+    schema_block = (f'<script type="application/ld+json">{json.dumps(org_schema, ensure_ascii=False)}</script>'
+                    f'<script type="application/ld+json">{json.dumps(website_schema, ensure_ascii=False)}</script>')
     dist.mkdir(parents=True, exist_ok=True)
     (dist/'index.html').write_text(
         shell(f"{SITE['name']} — Hair Tips for SA Moms", SITE['description'],
-              feat.get('image','') if feat else '', '/', html, posts), encoding='utf-8')
+              feat.get('image','') if feat else '', '/', html, posts, extra=schema_block), encoding='utf-8')
     print('  Built: index.html')
+
+
+def build_about(posts, dist):
+    out = dist/'about'
+    out.mkdir(parents=True, exist_ok=True)
+    person_schema = {"@context":"https://schema.org","@type":"Person",
+        "name":AUTHOR["name"],"jobTitle":AUTHOR["title"],
+        "description":AUTHOR["bio"],"url":f"{SITE['url']}{AUTHOR['url']}",
+        "worksFor":{"@type":"Organization","name":"Mira Accessories","url":SITE["shop_url"]},
+        "knowsAbout":["Baby hair care","Toddler hairstyling","South African parenting","Baby hair accessories"]}
+    html = f'''<section class="section"><div class="container" style="max-width:720px;">
+  <h1 style="font-family:var(--font-serif);font-size:40px;margin-bottom:8px;">About the author</h1>
+  <p style="color:var(--mid);margin-bottom:32px;">The person behind every Mira bow.</p>
+  <h2 style="font-family:var(--font-serif);font-size:28px;margin-bottom:8px;">{AUTHOR["name"]}</h2>
+  <p style="color:var(--mid);margin-bottom:24px;"><em>{AUTHOR["title"]}</em></p>
+  <p style="font-size:17px;line-height:1.75;margin-bottom:20px;">{esc(AUTHOR["bio"])}</p>
+  <p style="font-size:17px;line-height:1.75;margin-bottom:32px;">Everything on this blog is written with one South African mom in mind at a time — from the first headband in the hospital to the first matching Mom &amp; Me set for a family wedding. If a tip here makes your morning easier, it's done its job.</p>
+  <a href="{SITE["shop_url"]}" class="btn-primary" target="_blank" rel="noopener">Visit the Mira shop →</a>
+</div></section>'''
+    (out/'index.html').write_text(
+        shell(f'About {AUTHOR["name"]} — {SITE["name"]}',
+              f'{AUTHOR["name"]} — {AUTHOR["title"]}. {AUTHOR["byline_bio"]}',
+              '', '/about/', html, posts,
+              extra=f'<script type="application/ld+json">{json.dumps(person_schema, ensure_ascii=False)}</script>'),
+        encoding='utf-8')
+    print('  Built: /about/')
 
 
 def build_list(posts, dist):
@@ -334,18 +416,37 @@ def build_posts(posts, dist):
   </div>
 </aside>'''
 
-        schema = json.dumps({"@context":"https://schema.org","@type":"BlogPosting",
+        cat      = post.get('category','')
+        cat_slug = slugify(cat) if cat else ''
+        blog_post_schema = {"@context":"https://schema.org","@type":"BlogPosting",
+            "mainEntityOfPage":{"@type":"WebPage","@id":f"{SITE['url']}{post['url']}"},
             "headline":post.get('title',''),"description":post.get('excerpt',''),
-            "image":post.get('image',''),"datePublished":post.get('date',''),
-            "author":{"@type":"Organization","name":"Mira Accessories"},
-            "publisher":{"@type":"Organization","name":"Mira Accessories"},
-            "keywords":', '.join(post.get('keywords',post.get('tags',[])))})
+            "image":post.get('image',''),"datePublished":post.get('date',''),"dateModified":post.get('date',''),
+            "inLanguage":SITE["locale"],
+            "author":{"@type":"Person","name":AUTHOR["name"],"jobTitle":AUTHOR["title"],
+                      "url":f"{SITE['url']}{AUTHOR['url']}","description":AUTHOR["byline_bio"]},
+            "publisher":{"@type":"Organization","name":"Mira Accessories",
+                         "url":SITE["shop_url"],
+                         "logo":{"@type":"ImageObject","url":"https://static.wixstatic.com/media/4b2909_39f0afa2861e46fdb0af74a03c157a27~mv2.png"}},
+            "keywords":', '.join(post.get('keywords',post.get('tags',[])))}
+        breadcrumb_schema = {"@context":"https://schema.org","@type":"BreadcrumbList",
+            "itemListElement":[
+                {"@type":"ListItem","position":1,"name":"Blog","item":f"{SITE['url']}/"},
+                {"@type":"ListItem","position":2,"name":cat or "Posts","item":f"{SITE['url']}/category/{cat_slug}/" if cat_slug else f"{SITE['url']}/posts/"},
+                {"@type":"ListItem","position":3,"name":post.get('title',''),"item":f"{SITE['url']}{post['url']}"}]}
+        schema_block = (f'<script type="application/ld+json">{json.dumps(blog_post_schema, ensure_ascii=False)}</script>'
+                        f'<script type="application/ld+json">{json.dumps(breadcrumb_schema, ensure_ascii=False)}</script>')
 
-        html = f'''<header class="post-header">
+        html = f'''<nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container">
+  <a href="/">Home</a> <span>›</span>
+  {f'<a href="/category/{cat_slug}/">{cat}</a> <span>›</span>' if cat else ''}
+  <span aria-current="page">{esc(post.get("title",""))}</span>
+</div></nav>
+<header class="post-header">
   <span class="post-category-tag">{post.get("category","")}</span>
   <h1 class="post-header__title">{esc(post.get("title",""))}</h1>
   <div class="post-header__meta">
-    <span>Mira Accessories</span><span>{post.get("date","")}</span><span>{post.get("read_time","5 min read")}</span>
+    <span>By <a href="{AUTHOR["url"]}" rel="author">{AUTHOR["name"]}</a></span><span>{post.get("date","")}</span><span>{post.get("read_time","5 min read")}</span>
   </div>
 </header>
 <div class="post-hero-image">
@@ -362,11 +463,20 @@ def build_posts(posts, dist):
 </div></div></section>
 {related_section(post, posts)}'''
 
+        author_card = f'''<section class="author-card"><div class="container">
+  <div class="author-card__inner">
+    <div>
+      <div class="author-card__label">Written by</div>
+      <div class="author-card__name"><a href="{AUTHOR["url"]}">{AUTHOR["name"]}</a></div>
+      <p class="author-card__bio">{esc(AUTHOR["byline_bio"])}</p>
+    </div>
+  </div>
+</div></section>'''
         (out/'index.html').write_text(
             shell(f'{post.get("title","")} | {SITE["name"]}',
                   post.get('meta_description', post.get('excerpt','')),
-                  post.get('image',''), post['url'], html, posts,
-                  extra=f'<script type="application/ld+json">{schema}</script>'),
+                  post.get('image',''), post['url'], html + author_card, posts,
+                  extra=schema_block),
             encoding='utf-8')
     print(f'  Built: {len(posts)} post pages')
 
@@ -412,15 +522,63 @@ def build_tags(posts, dist):
 
 def build_extras(posts, dist):
     urls = [f'  <url><loc>{SITE["url"]}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>',
-            f'  <url><loc>{SITE["url"]}/posts/</loc><changefreq>daily</changefreq><priority>0.9</priority></url>']
+            f'  <url><loc>{SITE["url"]}/posts/</loc><changefreq>daily</changefreq><priority>0.9</priority></url>',
+            f'  <url><loc>{SITE["url"]}/about/</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>']
     for p in posts:
-        urls.append(f'  <url><loc>{SITE["url"]}{p["url"]}</loc><lastmod>{p.get("date","")}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>')
-    (dist/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+'\n'.join(urls)+'\n</urlset>',encoding='utf-8')
-    (dist/'robots.txt').write_text(f'User-agent: *\nAllow: /\nSitemap: {SITE["url"]}/sitemap.xml\n',encoding='utf-8')
+        img = p.get('image','')
+        img_block = (f'\n    <image:image><image:loc>{esc(img)}</image:loc>'
+                     f'<image:title>{esc(p.get("title",""))}</image:title>'
+                     f'<image:caption>{esc(p.get("image_alt", p.get("title","")))}</image:caption></image:image>') if img else ''
+        urls.append(f'  <url><loc>{SITE["url"]}{p["url"]}</loc><lastmod>{p.get("date","")}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority>{img_block}</url>')
+    (dist/'sitemap.xml').write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n'
+        +'\n'.join(urls)+'\n</urlset>', encoding='utf-8')
+    (dist/'robots.txt').write_text(
+        f'User-agent: *\nAllow: /\n\n'
+        f'Sitemap: {SITE["url"]}/sitemap.xml\n'
+        f'Host: {SITE["url"].replace("https://","")}\n', encoding='utf-8')
     (dist/'CNAME').write_text('blog.miraaccessories.co.za',encoding='utf-8')
     err = '<div style="text-align:center;padding:100px 24px;"><div style="font-family:var(--font-serif);font-size:80px;color:var(--border)">404</div><h1 style="font-family:var(--font-serif);font-size:32px;margin:16px 0 12px">Page not found</h1><p style="color:var(--mid);margin-bottom:32px">This article has moved or doesn\'t exist.</p><a href="/" class="btn-primary">Back to home →</a></div>'
     (dist/'404.html').write_text(shell(f'404 — {SITE["name"]}','Page not found.','','/404/',err,posts),encoding='utf-8')
-    print('  Built: sitemap, robots.txt, CNAME, 404')
+    print('  Built: sitemap (with images), robots.txt, CNAME, 404')
+
+
+def build_feed(posts, dist):
+    items = []
+    for p in posts[:20]:
+        pub = p.get('date','')
+        try:
+            pub_rfc = datetime.strptime(pub, "%Y-%m-%d").strftime("%a, %d %b %Y 09:00:00 +0200")
+        except Exception:
+            pub_rfc = ""
+        items.append(
+            f'    <item>\n'
+            f'      <title>{esc(p.get("title",""))}</title>\n'
+            f'      <link>{SITE["url"]}{p["url"]}</link>\n'
+            f'      <guid isPermaLink="true">{SITE["url"]}{p["url"]}</guid>\n'
+            f'      <pubDate>{pub_rfc}</pubDate>\n'
+            f'      <category>{esc(p.get("category",""))}</category>\n'
+            f'      <dc:creator>{esc(AUTHOR["name"])}</dc:creator>\n'
+            f'      <description>{esc(p.get("excerpt",""))}</description>\n'
+            f'    </item>'
+        )
+    now = datetime.now().strftime("%a, %d %b %Y %H:%M:%S +0200")
+    rss = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+           '  <channel>\n'
+           f'    <title>{esc(SITE["name"])}</title>\n'
+           f'    <link>{SITE["url"]}</link>\n'
+           f'    <description>{esc(SITE["description"])}</description>\n'
+           f'    <language>en-ZA</language>\n'
+           f'    <lastBuildDate>{now}</lastBuildDate>\n'
+           f'    <atom:link href="{SITE["url"]}/feed.xml" rel="self" type="application/rss+xml"/>\n'
+           + '\n'.join(items) + '\n'
+           '  </channel>\n'
+           '</rss>\n')
+    (dist/'feed.xml').write_text(rss, encoding='utf-8')
+    print('  Built: feed.xml (RSS)')
 
 
 # ── MAIN ─────────────────────────────────────────────
@@ -439,6 +597,8 @@ def build():
     build_posts(posts, DIST_DIR)
     build_cats(posts, DIST_DIR)
     build_tags(posts, DIST_DIR)
+    build_about(posts, DIST_DIR)
+    build_feed(posts, DIST_DIR)
     build_extras(posts, DIST_DIR)
     total = sum(1 for _ in DIST_DIR.rglob('*.html'))
     print(f'\n✓ {total} HTML pages → dist/\n')
