@@ -32,7 +32,7 @@ SITE = {
     "description": "Expert advice on baby and toddler hair care, styling tips, and the best hair accessories for South African moms.",
     "locale":      "en-ZA",
     "country":     "ZA",
-    "ga4_id":      os.environ.get("MIRA_GA4_ID", ""),
+    "ga4_id":      os.environ.get("MIRA_GA4_ID", "G-DP1X3Q0NST"),
     "gsc_verify":  os.environ.get("MIRA_GSC_VERIFY", ""),
     "instagram":   os.environ.get("MIRA_INSTAGRAM", "https://www.instagram.com/miraaccessories.co.za/"),
     "facebook":    os.environ.get("MIRA_FACEBOOK", ""),
