@@ -78,6 +78,14 @@ def wix_img(url, w, h, align="c", mode="fill"):
         return url
     return _WIX_FILL_RE.sub(rf'\1{mode}/w_{w},h_{h},al_{align},q_80/', url)
 
+def wix_srcset(url, widths, aspect=1, align="c", mode="fill"):
+    """Build a responsive srcset value listing the same image at multiple widths.
+    aspect: width/height ratio (1 for square, 1.5 for 3:2, etc.)
+    Falls through to single URL if not a Wix URL."""
+    if not url or "static.wixstatic.com" not in url:
+        return url
+    return ", ".join(f"{wix_img(url, w, int(w/aspect), align, mode)} {w}w" for w in widths)
+
 
 # ── POST LOADER ─────────────────────────────────────
 def load_posts(src_dir=None, url_prefix="/posts/"):
@@ -464,7 +472,7 @@ def build_posts(posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{wix_img(post.get("image",""), 500, 500)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="500" height="500" loading="eager">
+  <img src="{wix_img(post.get("image",""), 800, 800)}" srcset="{wix_srcset(post.get("image",""), [400, 600, 800, 1200])}" sizes="(max-width: 800px) 100vw, 800px" alt="{esc(post.get("image_alt", post.get("title","")))}" width="800" height="800" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
@@ -635,7 +643,7 @@ def build_drafts(drafts, all_posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{wix_img(post.get("image",""), 500, 500)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="500" height="500" loading="eager">
+  <img src="{wix_img(post.get("image",""), 800, 800)}" srcset="{wix_srcset(post.get("image",""), [400, 600, 800, 1200])}" sizes="(max-width: 800px) 100vw, 800px" alt="{esc(post.get("image_alt", post.get("title","")))}" width="800" height="800" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
