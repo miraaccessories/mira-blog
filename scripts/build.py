@@ -66,6 +66,16 @@ def esc(s):
     return str(s).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
 
 
+_WIX_FILL_RE = re.compile(r'(/v1/fill/)w_\d+,h_\d+(,[^/]+)?/')
+
+def wix_img(url, w, h):
+    """Rewrite a Wix CDN image URL to request a specific width/height with center-align crop.
+    Falls through untouched for non-Wix URLs or unexpected formats."""
+    if not url or "static.wixstatic.com" not in url:
+        return url
+    return _WIX_FILL_RE.sub(rf'\1w_{w},h_{h},al_c,q_80/', url)
+
+
 # ── POST LOADER ─────────────────────────────────────
 def load_posts():
     posts = []
@@ -93,7 +103,7 @@ def load_posts():
 def post_card(p):
     return f'''<a class="post-card" href="{p['url']}">
   <div class="post-card__image-wrap">
-    <img class="post-card__image" src="{p.get('image','')}" alt="{esc(p.get('image_alt', p.get('title','')))}" loading="lazy" width="400" height="250">
+    <img class="post-card__image" src="{wix_img(p.get('image',''), 600, 400)}" alt="{esc(p.get('image_alt', p.get('title','')))}" loading="lazy" width="600" height="400">
   </div>
   <div class="post-card__body">
     <div class="post-card__category">{p.get('category','')}</div>
@@ -108,7 +118,7 @@ def post_card(p):
 
 def featured_card(p):
     return f'''<a class="featured-post" href="{p['url']}">
-  <img class="featured-post__image" src="{p.get('image','')}" alt="{esc(p.get('image_alt', p.get('title','')))}" width="600" height="450" loading="eager">
+  <img class="featured-post__image" src="{wix_img(p.get('image',''), 800, 600)}" alt="{esc(p.get('image_alt', p.get('title','')))}" width="800" height="600" loading="eager">
   <div class="featured-post__body">
     <span class="post-category-tag">{p.get('category','')}</span>
     <h2 class="featured-post__title">{esc(p.get('title',''))}</h2>
@@ -123,7 +133,7 @@ def featured_card(p):
 
 def sidebar_post(p):
     return f'''<a class="sidebar-post" href="{p['url']}">
-  <img src="{p.get('image','')}" alt="{esc(p.get('title',''))}" loading="lazy" width="52" height="52">
+  <img src="{wix_img(p.get('image',''), 104, 104)}" alt="{esc(p.get('title',''))}" loading="lazy" width="52" height="52">
   <div>
     <div class="sidebar-post__title">{esc(p.get('title',''))}</div>
     <div class="sidebar-post__cat">{p.get('category','')}</div>
@@ -450,7 +460,7 @@ def build_posts(posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{post.get("image","")}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="900" height="600" loading="eager">
+  <img src="{wix_img(post.get("image",""), 1200, 800)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1200" height="800" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
