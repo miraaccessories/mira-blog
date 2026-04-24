@@ -464,7 +464,7 @@ def build_posts(posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{wix_img(post.get("image",""), 1000, 1000)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1000" height="1000" loading="eager">
+  <img src="{wix_img(post.get("image",""), 500, 500)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="500" height="500" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
@@ -635,7 +635,7 @@ def build_drafts(drafts, all_posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{wix_img(post.get("image",""), 1000, 1000)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1000" height="1000" loading="eager">
+  <img src="{wix_img(post.get("image",""), 500, 500)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="500" height="500" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
