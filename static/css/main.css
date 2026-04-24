@@ -1113,8 +1113,16 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 768px) {
-  .featured-post { grid-template-columns: 1fr; }
-  .featured-post__image { aspect-ratio: 4/3; height: auto; }
+  .featured-post {
+    display: block;
+  }
+  .featured-post__image {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    display: block;
+  }
   .featured-post__body { padding: 24px 22px; }
   .post-grid { grid-template-columns: 1fr; }
   .product-grid { grid-template-columns: 1fr; }
