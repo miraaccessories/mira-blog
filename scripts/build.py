@@ -66,15 +66,17 @@ def esc(s):
     return str(s).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
 
 
-_WIX_FILL_RE = re.compile(r'(/v1/fill/)w_\d+,h_\d+(,[^/]+)?/')
+_WIX_FILL_RE = re.compile(r'(/v1/)(fill|fit)/w_\d+,h_\d+(,[^/]+)?/')
 
-def wix_img(url, w, h, align="c"):
-    """Rewrite a Wix CDN image URL to request a specific width/height with alignment.
+def wix_img(url, w, h, align="c", mode="fill"):
+    """Rewrite a Wix CDN image URL to request a specific width/height.
+    mode: 'fill' crops to exact dimensions (default);
+          'fit' scales to fit within dimensions, preserves full image (letterbox-friendly).
     align: 'c' center (default), 't' top, 'b' bottom, 'l' left, 'r' right.
     Falls through untouched for non-Wix URLs or unexpected formats."""
     if not url or "static.wixstatic.com" not in url:
         return url
-    return _WIX_FILL_RE.sub(rf'\1w_{w},h_{h},al_{align},q_80/', url)
+    return _WIX_FILL_RE.sub(rf'\1{mode}/w_{w},h_{h},al_{align},q_80/', url)
 
 
 # ── POST LOADER ─────────────────────────────────────
@@ -462,7 +464,7 @@ def build_posts(posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{wix_img(post.get("image",""), 1200, 800, align="t")}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1200" height="800" loading="eager">
+  <img src="{wix_img(post.get("image",""), 1000, 1000)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1000" height="1000" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
@@ -633,7 +635,7 @@ def build_drafts(drafts, all_posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{wix_img(post.get("image",""), 1200, 800, align="t")}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1200" height="800" loading="eager">
+  <img src="{wix_img(post.get("image",""), 1000, 1000)}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1000" height="1000" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
