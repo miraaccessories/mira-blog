@@ -14,6 +14,12 @@ secrets/
 # Drafts — stay local until ready to publish
 posts/drafts/
 
+# Editorial / strategy docs — keep local, don't expose on public repo
+CLAUDE.md
+
+# Claude Code workspace — local tooling, memory, slash commands
+.claude/
+
 # Editor / OS noise
 .vscode/
 .idea/
