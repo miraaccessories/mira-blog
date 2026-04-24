@@ -450,7 +450,7 @@ def build_posts(posts, dist):
   </div>
 </header>
 <div class="post-hero-image">
-  <img src="{post.get("image","")}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="900" height="506" loading="eager">
+  <img src="{post.get("image","")}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="900" height="600" loading="eager">
 </div>
 <section class="post-body"><div class="container"><div class="post-layout">
   <article>
