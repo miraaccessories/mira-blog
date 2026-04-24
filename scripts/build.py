@@ -7,7 +7,7 @@ Run: python3 scripts/build.py
 Output: dist/
 """
 
-import json, os, re, shutil
+import json, os, re, shutil, sys
 from datetime import datetime
 from pathlib import Path
 
@@ -78,9 +78,10 @@ def wix_img(url, w, h, align="c"):
 
 
 # ── POST LOADER ─────────────────────────────────────
-def load_posts():
+def load_posts(src_dir=None, url_prefix="/posts/"):
+    src_dir = src_dir or POSTS_DIR
     posts = []
-    for f in POSTS_DIR.glob("*.html"):
+    for f in src_dir.glob("*.html"):
         raw = f.read_text(encoding="utf-8")
         meta = {}
         m = re.search(r'<!--META\n(.*?)-->', raw, re.DOTALL)
@@ -94,7 +95,7 @@ def load_posts():
         meta['featured'] = meta.get('featured','').strip().lower() in ('true','1','yes')
         body = re.sub(r'<!--META\n.*?-->', '', raw, flags=re.DOTALL).strip()
         excerpt = meta.get('excerpt', re.sub(r'<[^>]+>','',body)[:160].strip()+'...')
-        posts.append({**meta, 'slug': f.stem, 'url': f'/posts/{f.stem}/',
+        posts.append({**meta, 'slug': f.stem, 'url': f'{url_prefix}{f.stem}/',
                       'body': body, 'excerpt': excerpt})
     posts.sort(key=lambda p: p.get('date',''), reverse=True)
     return posts
@@ -592,6 +593,82 @@ def build_feed(posts, dist):
     print('  Built: feed.xml (RSS)')
 
 
+def build_drafts(drafts, all_posts, dist):
+    """Render drafts into dist/posts-drafts/ with a visible DRAFT banner and noindex meta.
+    Uses real posts for related-posts, so drafts don't pollute each other's sidebar.
+    Never touches dist/posts/ — drafts can never accidentally be deployed."""
+    if not drafts:
+        return
+    banner = ('<div style="position:sticky;top:0;z-index:999;background:#b33;color:#fff;'
+              'text-align:center;padding:10px 16px;font-weight:600;font-size:14px;'
+              'letter-spacing:0.5px;">⚠ DRAFT PREVIEW — not published, not indexed, local only</div>')
+    noindex = '<meta name="robots" content="noindex, nofollow, noarchive">'
+    for post in drafts:
+        out = dist/'posts-drafts'/post['slug']
+        out.mkdir(parents=True, exist_ok=True)
+        body     = add_ids(post.get('body',''))
+        t        = toc(body)
+        recent   = [p for p in all_posts if p['slug']!=post['slug']][:5]
+        tags_h   = ''.join(f'<a class="tag" href="/tags/{slugify(tg)}/">{tg}</a>' for tg in post.get('tags',[]))
+        cat      = post.get('category','')
+        cat_slug = slugify(cat) if cat else ''
+        sidebar = f'''<aside class="sidebar">
+  {t}
+  <div class="sidebar-widget">
+    <div class="sidebar-widget__title">Recent articles</div>
+    {"".join(sidebar_post(p) for p in recent)}
+  </div>
+</aside>'''
+        html = f'''{banner}
+<nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container">
+  <a href="/">Home</a> <span>›</span>
+  {f'<a href="/category/{cat_slug}/">{cat}</a> <span>›</span>' if cat else ''}
+  <span aria-current="page">{esc(post.get("title",""))}</span>
+</div></nav>
+<header class="post-header">
+  <span class="post-category-tag">{post.get("category","")}</span>
+  <h1 class="post-header__title">{esc(post.get("title",""))}</h1>
+  <div class="post-header__meta">
+    <span>By <a href="{AUTHOR["url"]}" rel="author">{AUTHOR["name"]}</a></span><span>{post.get("date","")}</span><span>{post.get("read_time","5 min read")}</span>
+  </div>
+</header>
+<div class="post-hero-image">
+  <img src="{wix_img(post.get("image",""), 1200, 800, align="t")}" alt="{esc(post.get("image_alt", post.get("title","")))}" width="1200" height="800" loading="eager">
+</div>
+<section class="post-body"><div class="container"><div class="post-layout">
+  <article>
+    <p class="intro">{esc(post.get("excerpt",""))}</p>
+    {body}
+    <hr class="divider">
+    <div class="tag-cloud">{tags_h}</div>
+  </article>
+  {sidebar}
+</div></div></section>'''
+        (out/'index.html').write_text(
+            shell(f'[DRAFT] {post.get("title","")} | {SITE["name"]}',
+                  post.get('meta_description', post.get('excerpt','')),
+                  post.get('image',''), f'/posts-drafts/{post["slug"]}/', html, all_posts,
+                  extra=noindex),
+            encoding='utf-8')
+
+    # Draft index page
+    idx_cards = ''.join(post_card(p) for p in drafts)
+    idx_html = f'''{banner}
+<div class="category-header">
+  <h1 class="category-header__title">Draft previews</h1>
+  <p class="category-header__count">{len(drafts)} local-only drafts · not published · not indexed</p>
+</div>
+<section class="section"><div class="container">
+  <div class="post-grid">{idx_cards}</div>
+</div></section>'''
+    (dist/'posts-drafts').mkdir(parents=True, exist_ok=True)
+    (dist/'posts-drafts'/'index.html').write_text(
+        shell(f'[DRAFT] Drafts — {SITE["name"]}', 'Local draft previews.',
+              '', '/posts-drafts/', idx_html, all_posts, extra=noindex),
+        encoding='utf-8')
+    print(f'  Built: {len(drafts)} draft preview(s) → /posts-drafts/')
+
+
 # ── MAIN ─────────────────────────────────────────────
 def build():
     print(f'\n🌸 Mira Blog\n{"─"*36}')
@@ -611,6 +688,9 @@ def build():
     build_about(posts, DIST_DIR)
     build_feed(posts, DIST_DIR)
     build_extras(posts, DIST_DIR)
+    if "--drafts" in sys.argv:
+        drafts = load_posts(POSTS_DIR/"drafts", url_prefix="/posts-drafts/")
+        build_drafts(drafts, posts, DIST_DIR)
     total = sum(1 for _ in DIST_DIR.rglob('*.html'))
     print(f'\n✓ {total} HTML pages → dist/\n')
 
