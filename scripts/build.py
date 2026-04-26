@@ -464,34 +464,43 @@ def build_posts(posts, dist):
                 {"@type":"ListItem","position":1,"name":"Blog","item":f"{SITE['url']}/"},
                 {"@type":"ListItem","position":2,"name":cat or "Posts","item":f"{SITE['url']}/category/{cat_slug}/" if cat_slug else f"{SITE['url']}/posts/"},
                 {"@type":"ListItem","position":3,"name":post.get('title',''),"item":f"{SITE['url']}{post['url']}"}]}
-        # Optional HowTo + FAQ schemas — opt-in via META fields:
+        # Optional HowTo + FAQ — opt-in via META fields. Generates BOTH visible
+        # HTML sections AND matching JSON-LD schema (Google requires the FAQ
+        # content to be visible to users for rich-result eligibility).
         #   howto_steps: Step name (timing); Step 2 (timing); ...
         #   faq: Question?||Answer.;Question 2?||Answer 2.
-        # Either field, when present, emits the matching JSON-LD for Google rich results.
         extra_schemas = []
+        howto_visible_html = ''
+        faq_visible_html = ''
         howto_raw = (post.get('howto_steps','') or '').strip()
         if howto_raw:
-            steps = []
-            for i, s in enumerate([x.strip() for x in howto_raw.split(';') if x.strip()], 1):
-                steps.append({"@type":"HowToStep","position":i,"name":s})
-            if steps:
+            raw_steps = [x.strip() for x in howto_raw.split(';') if x.strip()]
+            steps_schema = [{"@type":"HowToStep","position":i+1,"name":s} for i,s in enumerate(raw_steps)]
+            if steps_schema:
                 extra_schemas.append({"@context":"https://schema.org","@type":"HowTo",
                     "name":post.get('title',''),
                     "description":post.get('meta_description',post.get('excerpt','')),
                     "image":post.get('image',''),
-                    "totalTime":f"PT{len(steps)}M",
-                    "step":steps})
+                    "totalTime":f"PT{len(steps_schema)}M",
+                    "step":steps_schema})
+                steps_li = ''.join(f'<li>{esc(s)}</li>' for s in raw_steps)
+                howto_visible_html = (f'<section class="post-howto" aria-label="Quick steps">'
+                                      f'<h2>Quick steps at a glance</h2><ol>{steps_li}</ol></section>')
         faq_raw = (post.get('faq','') or '').strip()
         if faq_raw:
-            qa = []
+            qa_schema = []
+            qa_visible = []
             for pair in [x.strip() for x in faq_raw.split(';') if x.strip()]:
                 if '||' not in pair: continue
-                q, a = pair.split('||', 1)
-                qa.append({"@type":"Question","name":q.strip(),
-                    "acceptedAnswer":{"@type":"Answer","text":a.strip()}})
-            if qa:
+                q, a = [p.strip() for p in pair.split('||', 1)]
+                qa_schema.append({"@type":"Question","name":q,
+                    "acceptedAnswer":{"@type":"Answer","text":a}})
+                qa_visible.append(f'<details class="faq-item"><summary class="faq-q">{esc(q)}</summary><div class="faq-a">{esc(a)}</div></details>')
+            if qa_schema:
                 extra_schemas.append({"@context":"https://schema.org","@type":"FAQPage",
-                    "mainEntity":qa})
+                    "mainEntity":qa_schema})
+                faq_visible_html = (f'<section class="post-faq" aria-label="Frequently asked questions">'
+                                    f'<h2>Frequently asked questions</h2>{"".join(qa_visible)}</section>')
         extras_html = ''.join(
             f'<script type="application/ld+json">{json.dumps(s, ensure_ascii=False)}</script>'
             for s in extra_schemas)
@@ -518,6 +527,8 @@ def build_posts(posts, dist):
   <article>
     <p class="intro">{esc(post.get("excerpt",""))}</p>
     {body}
+    {howto_visible_html}
+    {faq_visible_html}
     <hr class="divider">
     <div class="tag-cloud">{tags_h}</div>
   </article>
