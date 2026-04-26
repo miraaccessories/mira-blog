@@ -536,12 +536,18 @@ def build_posts(posts, dist):
 </div></div></section>
 {related_section(post, posts)}'''
 
+        # Author bio — boxed card with monogram avatar (initials), styled like
+        # a polished "About the author" block (Cup of Jo / Honestly Modern style).
+        initials = ''.join(p[0] for p in AUTHOR["name"].split() if p)[:2].upper()
         author_card = f'''<section class="author-card"><div class="container">
   <div class="author-card__inner">
-    <div>
+    <div class="author-card__avatar" aria-hidden="true">{initials}</div>
+    <div class="author-card__text">
       <div class="author-card__label">Written by</div>
       <div class="author-card__name"><a href="{AUTHOR["url"]}">{AUTHOR["name"]}</a></div>
+      <p class="author-card__role">{esc(AUTHOR["title"])}</p>
       <p class="author-card__bio">{esc(AUTHOR["byline_bio"])}</p>
+      <a class="author-card__more" href="{AUTHOR["url"]}">More about Shaveta →</a>
     </div>
   </div>
 </div></section>'''

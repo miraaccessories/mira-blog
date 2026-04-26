@@ -1240,3 +1240,135 @@ a { color: inherit; text-decoration: none; }
   .faq-q { padding: 14px 16px; font-size: 14px; }
   .faq-a { padding: 14px 16px 16px; font-size: 14px; }
 }
+
+/* ────────────────────────────────────────────────────────────
+   AUTHOR CARD — boxed bio at end of post (Cup of Jo style)
+   ──────────────────────────────────────────────────────────── */
+.author-card {
+  padding: 56px 24px 24px;
+  background: var(--blush);
+}
+.author-card .container { max-width: 760px; }
+.author-card__inner {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  padding: 36px 32px;
+  background: #fff;
+  border: 1px solid var(--border-solid);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(140,80,90,0.06);
+}
+.author-card__avatar {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rose-light), var(--rose) 140%);
+  color: #fff;
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(201,125,138,0.25);
+}
+.author-card__text { flex: 1; min-width: 0; }
+.author-card__label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rose);
+  margin-bottom: 6px;
+}
+.author-card__name {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin-bottom: 2px;
+}
+.author-card__name a { color: inherit; text-decoration: none; }
+.author-card__name a:hover { color: var(--rose-dark); }
+.author-card__role {
+  font-size: 13px;
+  color: var(--mid);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+.author-card__bio {
+  font-size: 15px;
+  line-height: 1.72;
+  color: var(--mid);
+  margin-bottom: 14px;
+  max-width: 56ch;
+}
+.author-card__more {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--rose-dark);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rose-light);
+  padding-bottom: 2px;
+  transition: border-color .15s, color .15s;
+}
+.author-card__more:hover {
+  color: var(--rose);
+  border-color: var(--rose);
+}
+@media (max-width: 640px) {
+  .author-card { padding: 40px 16px 16px; }
+  .author-card__inner { flex-direction: column; gap: 18px; padding: 26px 22px; align-items: center; text-align: center; }
+  .author-card__avatar { width: 72px; height: 72px; font-size: 26px; }
+  .author-card__bio { max-width: none; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   PRODUCT CARD — refined: softer shadow, more "as featured" feel
+   ──────────────────────────────────────────────────────────── */
+.product-card {
+  border-color: var(--border) !important;
+  box-shadow: 0 2px 12px rgba(140,80,90,0.05) !important;
+  margin: 32px 0;
+}
+.product-card:hover {
+  box-shadow: 0 8px 22px rgba(140,80,90,0.10) !important;
+}
+.product-card__label {
+  color: var(--mid) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.12em !important;
+}
+
+/* ────────────────────────────────────────────────────────────
+   FAQ + HOWTO — premium spacing
+   ──────────────────────────────────────────────────────────── */
+.post-howto, .post-faq {
+  margin-top: 48px;
+  padding-top: 36px;
+}
+.post-howto h2, .post-faq h2 {
+  font-size: 28px;
+  margin-bottom: 22px;
+  letter-spacing: -0.01em;
+}
+.faq-item {
+  border-color: var(--border) !important;
+  margin-bottom: 10px;
+}
+.faq-q {
+  background: #fff !important;
+  border-bottom: 1px solid transparent;
+}
+.faq-item[open] .faq-q {
+  background: var(--blush) !important;
+  border-bottom-color: var(--border);
+}
+.post-howto ol li {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
