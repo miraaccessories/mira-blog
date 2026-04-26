@@ -464,8 +464,40 @@ def build_posts(posts, dist):
                 {"@type":"ListItem","position":1,"name":"Blog","item":f"{SITE['url']}/"},
                 {"@type":"ListItem","position":2,"name":cat or "Posts","item":f"{SITE['url']}/category/{cat_slug}/" if cat_slug else f"{SITE['url']}/posts/"},
                 {"@type":"ListItem","position":3,"name":post.get('title',''),"item":f"{SITE['url']}{post['url']}"}]}
+        # Optional HowTo + FAQ schemas — opt-in via META fields:
+        #   howto_steps: Step name (timing); Step 2 (timing); ...
+        #   faq: Question?||Answer.;Question 2?||Answer 2.
+        # Either field, when present, emits the matching JSON-LD for Google rich results.
+        extra_schemas = []
+        howto_raw = (post.get('howto_steps','') or '').strip()
+        if howto_raw:
+            steps = []
+            for i, s in enumerate([x.strip() for x in howto_raw.split(';') if x.strip()], 1):
+                steps.append({"@type":"HowToStep","position":i,"name":s})
+            if steps:
+                extra_schemas.append({"@context":"https://schema.org","@type":"HowTo",
+                    "name":post.get('title',''),
+                    "description":post.get('meta_description',post.get('excerpt','')),
+                    "image":post.get('image',''),
+                    "totalTime":f"PT{len(steps)}M",
+                    "step":steps})
+        faq_raw = (post.get('faq','') or '').strip()
+        if faq_raw:
+            qa = []
+            for pair in [x.strip() for x in faq_raw.split(';') if x.strip()]:
+                if '||' not in pair: continue
+                q, a = pair.split('||', 1)
+                qa.append({"@type":"Question","name":q.strip(),
+                    "acceptedAnswer":{"@type":"Answer","text":a.strip()}})
+            if qa:
+                extra_schemas.append({"@context":"https://schema.org","@type":"FAQPage",
+                    "mainEntity":qa})
+        extras_html = ''.join(
+            f'<script type="application/ld+json">{json.dumps(s, ensure_ascii=False)}</script>'
+            for s in extra_schemas)
         schema_block = (f'<script type="application/ld+json">{json.dumps(blog_post_schema, ensure_ascii=False)}</script>'
-                        f'<script type="application/ld+json">{json.dumps(breadcrumb_schema, ensure_ascii=False)}</script>')
+                        f'<script type="application/ld+json">{json.dumps(breadcrumb_schema, ensure_ascii=False)}</script>'
+                        + extras_html)
 
         html = f'''<nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container">
   <a href="/">Home</a> <span>›</span>
