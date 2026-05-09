@@ -630,6 +630,18 @@ def build_extras(posts, dist):
 REDIRECTS = {
     '/posts/2025-04-19-back-to-school-hair-accessories-guide/':
         '/posts/2025-11-13-back-to-school-hair-accessories-guide/',
+    '/posts/2025-05-24-baby-hair-accessory-recalls-SA/':
+        '/posts/2026-03-16-baby-hair-accessory-recalls-SA/',
+    '/posts/2025-05-06-beautiful-baby-photoshoot-at-home/':
+        '/posts/2026-01-12-beautiful-baby-photoshoot-at-home/',
+    '/posts/2025-05-03-mom-me-aesthetic-SA/':
+        '/posts/2026-01-01-mom-me-aesthetic-SA/',
+    '/posts/2025-04-28-gift-for-mom-you-dont-know/':
+        '/posts/2025-12-15-gift-for-mom-you-dont-know/',
+    '/posts/2025-05-22-headbands-newborns-safe-guide/':
+        '/posts/2026-03-09-headbands-newborns-safe-guide/',
+    '/posts/2025-05-25-princess-party-hair-SA/':
+        '/posts/2026-03-19-princess-party-hair-SA/',
 }
 
 
