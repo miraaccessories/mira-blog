@@ -624,6 +624,34 @@ def build_extras(posts, dist):
     print('  Built: sitemap (with images), robots.txt, CNAME, 404')
 
 
+# Old slugs that Google indexed before we renamed posts. Each one redirects to
+# its current URL via meta-refresh + rel=canonical so the 404 disappears and
+# link equity passes to the live post.
+REDIRECTS = {
+    '/posts/2025-04-19-back-to-school-hair-accessories-guide/':
+        '/posts/2025-11-13-back-to-school-hair-accessories-guide/',
+}
+
+
+def build_redirects(dist):
+    for old, new in REDIRECTS.items():
+        target = dist / old.strip('/') / 'index.html'
+        target.parent.mkdir(parents=True, exist_ok=True)
+        full = SITE["url"] + new
+        target.write_text(
+            f'<!doctype html><html lang="en"><head>'
+            f'<meta charset="utf-8">'
+            f'<title>Redirecting…</title>'
+            f'<link rel="canonical" href="{full}">'
+            f'<meta name="robots" content="noindex,follow">'
+            f'<meta http-equiv="refresh" content="0; url={new}">'
+            f'<script>location.replace({json.dumps(new)});</script>'
+            f'</head><body>'
+            f'<p>This article has moved to <a href="{new}">{full}</a>.</p>'
+            f'</body></html>', encoding='utf-8')
+    print(f'  Built: {len(REDIRECTS)} redirect(s)')
+
+
 def build_feed(posts, dist):
     items = []
     for p in posts[:20]:
@@ -758,6 +786,7 @@ def build():
     build_about(posts, DIST_DIR)
     build_feed(posts, DIST_DIR)
     build_extras(posts, DIST_DIR)
+    build_redirects(DIST_DIR)
     if "--drafts" in sys.argv:
         drafts = load_posts(POSTS_DIR/"drafts", url_prefix="/posts-drafts/")
         build_drafts(drafts, posts, DIST_DIR)
