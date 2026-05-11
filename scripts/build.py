@@ -295,6 +295,9 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
       <a href="{SITE["shop_url"]}/category/mom-me" target="_blank">Mom &amp; Me Sets</a>
     </div>
   </div>
+  <div class="footer-disclaimer" style="border-top:1px solid var(--border);padding:16px 0;font-size:13px;color:var(--mid);text-align:center;line-height:1.5;">
+    <strong>A note from us:</strong> Our authors are SA moms sharing personal opinions and experiences, not medical, dermatological, or other professional experts. Nothing on this blog is medical advice. Please consult your paediatrician, dermatologist, or other qualified professional for guidance specific to your child.
+  </div>
   <div class="footer-bottom">
     <span>© {year} Mira Accessories. All rights reserved.</span>
     <span><a href="/faq/" style="color:inherit;">FAQ</a> · <a href="/about/" style="color:inherit;">About</a> · <a href="{SITE["shop_url"]}/privacy-policy" style="color:inherit;">Privacy</a> · <a href="{SITE["shop_url"]}/terms-and-conditions" style="color:inherit;">Terms</a></span>
@@ -404,17 +407,17 @@ FAQ_GROUPS = [
         ("At what age can my baby start wearing hair clips?",
          "From around 6 months once the head shape settles and there's enough hair for a clip to grip — but only with soft, lightweight snap clips designed for fine baby hair. Avoid alligator clips and metal claws under 12 months. Always supervised, never at sleep."),
         ("Why is my toddler's hair so fine and wispy?",
-         "Most baby and toddler hair is genuinely finer than adult hair until around age three to four. The follicles haven't fully matured, so each strand is thinner and more breakage-prone. It's almost always normal — the texture changes again between ages three and seven."),
+         "In our experience, most baby and toddler hair is finer than adult hair until around age three to four — each strand seems thinner and more breakage-prone, and the texture often shifts again between ages three and seven. This is what we've seen with our own little ones, not a medical statement; if you're worried about your toddler's hair or scalp, please check with your paediatrician."),
         ("When does baby and toddler hair change in texture?",
          "There are usually two shifts: the first newborn hair sheds between three and six months (often replaced by something completely different), and the toddler-to-child texture change happens around age three to four. A curly newborn can become a straight toddler, and vice versa."),
         ("Is it normal for my baby's hair to fall out in patches?",
-         "Newborn hair loss in the first six months is normal and called telogen effluvium — the hormones that kept the hair on through pregnancy drop, and the hair sheds. Patchy loss after twelve months, especially with scalp irritation, is worth checking with a paediatrician."),
+         "Some shedding in the first six months is something many newborns go through — most moms we know have seen it. We're not medical experts, so please don't take this as a diagnosis: any patchy loss, scalp irritation, or shedding that continues past twelve months is worth a chat with your paediatrician."),
         ("How often should I wash a toddler's hair?",
          "Two to three times a week is enough for most toddlers in South Africa. Daily washing strips the natural oils that protect fine baby hair. After dusty playgrounds or pool days, a quick water rinse is gentler than another shampoo."),
         ("What's the safest baby shampoo for fine hair in South Africa?",
-         "Look for sulphate-free, fragrance-light formulas — most SA pharmacies carry one or two paediatrician-tested options. Avoid anything with strong perfume or 2-in-1 conditioner under age two; the conditioner weighs fine hair down."),
+         "We personally look for sulphate-free, fragrance-light formulas — most SA pharmacies stock a few options labelled as gentle for babies. We avoid strong perfume and 2-in-1 conditioner under age two because the conditioner weighs fine hair down. This is our preference, not medical guidance — please check with your paediatrician before introducing a new product, especially if your baby has sensitive skin."),
         ("Should I oil my toddler's hair, and which oils are safe?",
-         "A drop of cold-pressed coconut, almond, or jojoba oil on dry ends is fine from about twelve months. Skip mineral oil and anything with essential oils (lavender, tea tree) on babies — their skin barrier is still developing."),
+         "In our own routines, a drop of cold-pressed coconut, almond, or jojoba oil on dry ends has worked nicely from about twelve months. We personally avoid mineral oil and essential oils (lavender, tea tree) on babies. We're not dermatologists, though — please check with your paediatrician before introducing any oil, especially on broken or sensitive skin."),
         ("How do I detangle fine baby hair without tears?",
          "Detangle wet, in sections, from the ends up — never from the scalp down. Use a wide-tooth comb or a soft baby brush, and a leave-in spray of water plus a tiny drop of oil. Two minutes of patience beats a tantrum."),
         ("Is it bad to brush wet toddler hair?",
@@ -462,7 +465,7 @@ FAQ_GROUPS = [
         ("How do I stop my toddler pulling clips out at school?",
          "Two reasons toddlers pull clips: too tight, or feels foreign. Start with five minutes of wear at home, build up, and let her choose the clip in the morning. Once it's 'her' clip, the pulling usually stops within a week."),
         ("What hairstyles work best for natural and curly toddler hair at school?",
-         "Two-strand twists, pineapple ponies, and low puffs with a soft satin-lined band. Detangle damp with conditioner and a wide-tooth comb. Skip tight braids that pull at the hairline — South African dermatologists see traction alopecia in toddlers more than parents realise."),
+         "Two-strand twists, pineapple ponies, and low puffs with a soft satin-lined band have worked well for many SA moms we know. Detangle damp with conditioner and a wide-tooth comb. We'd gently suggest avoiding very tight braids that pull at the hairline — if you ever notice thinning or redness along the hairline, please check with your paediatrician or a dermatologist."),
         ("How do I label hair accessories so they don't get lost at school?",
          "A small dot of nail polish or a fabric marker initial on the inside of the clip works. For elastics and scrunchies, sew a tiny coloured thread loop. Schools can't always tell whose clip is whose — make yours findable."),
         ("What's the best toddler hairstyle for school photo day?",
