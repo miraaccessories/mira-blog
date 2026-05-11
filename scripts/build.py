@@ -43,7 +43,7 @@ SITE = {
     "ga4_id":      os.environ.get("MIRA_GA4_ID", "G-DP1X3Q0NST"),
     "gsc_verify":  os.environ.get("MIRA_GSC_VERIFY", ""),
     "instagram":   os.environ.get("MIRA_INSTAGRAM", "https://www.instagram.com/mira_accessories_za/"),
-    "facebook":    os.environ.get("MIRA_FACEBOOK", "https://www.facebook.com/mira.accessories.sa"),
+    "facebook":    os.environ.get("MIRA_FACEBOOK", "https://www.facebook.com/mira.accessories.za"),
     "youtube":     os.environ.get("MIRA_YOUTUBE",  "https://www.youtube.com/@mira_accessories_za"),
 }
 
