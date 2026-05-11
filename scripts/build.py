@@ -42,8 +42,9 @@ SITE = {
     "country":     "ZA",
     "ga4_id":      os.environ.get("MIRA_GA4_ID", "G-DP1X3Q0NST"),
     "gsc_verify":  os.environ.get("MIRA_GSC_VERIFY", ""),
-    "instagram":   os.environ.get("MIRA_INSTAGRAM", "https://www.instagram.com/miraaccessories.co.za/"),
-    "facebook":    os.environ.get("MIRA_FACEBOOK", ""),
+    "instagram":   os.environ.get("MIRA_INSTAGRAM", "https://www.instagram.com/mira_accessories_za/"),
+    "facebook":    os.environ.get("MIRA_FACEBOOK", "https://www.facebook.com/mira.accessories.sa"),
+    "youtube":     os.environ.get("MIRA_YOUTUBE",  "https://www.youtube.com/@mira_accessories_za"),
 }
 
 AUTHOR = {
@@ -351,7 +352,7 @@ def build_home(posts, dist):
   </div>
 </section>'''
 
-    same_as = [u for u in [SITE.get("instagram"), SITE.get("facebook")] if u]
+    same_as = [u for u in [SITE.get("instagram"), SITE.get("facebook"), SITE.get("youtube")] if u]
     org_schema = {"@context":"https://schema.org","@type":"Organization",
         "name":"Mira Accessories","url":SITE["shop_url"],
         "logo":"https://static.wixstatic.com/media/4b2909_39f0afa2861e46fdb0af74a03c157a27~mv2.png",
@@ -538,7 +539,7 @@ def build_contact(posts, dist):
             "areaServed":"ZA",
             "availableLanguage":["English"]
         }],
-        "sameAs":[u for u in [SITE.get("instagram"), SITE.get("facebook")] if u]}
+        "sameAs":[u for u in [SITE.get("instagram"), SITE.get("facebook"), SITE.get("youtube")] if u]}
     html = f'''<section class="section"><div class="container" style="max-width:720px;">
   <h1 style="font-family:var(--font-serif);font-size:40px;margin-bottom:8px;">Contact Mira Accessories</h1>
   <p style="color:var(--mid);margin-bottom:32px;">We're a small South African team — real humans behind every reply. Reach us by WhatsApp, phone or email and we'll get back to you within one working day.</p>
@@ -559,6 +560,7 @@ def build_contact(posts, dist):
   <p style="margin-bottom:24px;">
     {f'<a href="{SITE["instagram"]}" target="_blank" rel="noopener" style="margin-right:16px;">Instagram</a>' if SITE.get("instagram") else ''}
     {f'<a href="{SITE["facebook"]}" target="_blank" rel="noopener" style="margin-right:16px;">Facebook</a>' if SITE.get("facebook") else ''}
+    {f'<a href="{SITE["youtube"]}" target="_blank" rel="noopener" style="margin-right:16px;">YouTube</a>' if SITE.get("youtube") else ''}
     <a href="{SITE["shop_url"]}/contact-us" target="_blank" rel="noopener">Full contact form on the shop &rarr;</a>
   </p>
 
