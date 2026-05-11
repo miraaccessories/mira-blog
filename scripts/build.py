@@ -300,7 +300,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
   </div>
   <div class="footer-bottom">
     <span>© {year} Mira Accessories. All rights reserved.</span>
-    <span><a href="/faq/" style="color:inherit;">FAQ</a> · <a href="/about/" style="color:inherit;">About</a> · <a href="{SITE["shop_url"]}/privacy-policy" style="color:inherit;">Privacy</a> · <a href="{SITE["shop_url"]}/terms-and-conditions" style="color:inherit;">Terms</a></span>
+    <span><a href="/faq/" style="color:inherit;">FAQ</a> · <a href="/about/" style="color:inherit;">About</a> · <a href="/contact/" style="color:inherit;">Contact</a> · <a href="{SITE["shop_url"]}/privacy-policy" style="color:inherit;">Privacy</a> · <a href="{SITE["shop_url"]}/terms-and-conditions" style="color:inherit;">Terms</a></span>
   </div>
 </footer>
 <script>{search_idx(posts)}</script>
@@ -514,6 +514,63 @@ FAQ_GROUPS = [
          "Yes — they're one of the easiest ways to coordinate a Sunday-best or photo outfit without changing what either of you wears. For school runs, choose subtle matching pieces (same scrunchie colour) rather than identical bows. (Mom & Me sets at miraaccessories.co.za.)"),
     ]),
 ]
+
+
+def build_contact(posts, dist):
+    out = dist/'contact'
+    out.mkdir(parents=True, exist_ok=True)
+    phone_display = "+27 (0) 83 324 1095"
+    phone_e164 = "+27833241095"
+    email = "support@miraaccessories.co.za"
+    whatsapp_url = f"https://wa.me/{phone_e164.lstrip('+')}"
+    org_schema = {"@context":"https://schema.org","@type":"Organization",
+        "name":"Mira Accessories",
+        "url":SITE["shop_url"],
+        "logo":"https://static.wixstatic.com/media/4b2909_39f0afa2861e46fdb0af74a03c157a27~mv2.png",
+        "email":email,
+        "telephone":phone_e164,
+        "areaServed":{"@type":"Country","name":"South Africa"},
+        "contactPoint":[{
+            "@type":"ContactPoint",
+            "contactType":"customer support",
+            "telephone":phone_e164,
+            "email":email,
+            "areaServed":"ZA",
+            "availableLanguage":["English"]
+        }],
+        "sameAs":[u for u in [SITE.get("instagram"), SITE.get("facebook")] if u]}
+    html = f'''<section class="section"><div class="container" style="max-width:720px;">
+  <h1 style="font-family:var(--font-serif);font-size:40px;margin-bottom:8px;">Contact Mira Accessories</h1>
+  <p style="color:var(--mid);margin-bottom:32px;">We're a small South African team — real humans behind every reply. Reach us by WhatsApp, phone or email and we'll get back to you within one working day.</p>
+
+  <h2 style="font-family:var(--font-serif);font-size:24px;margin:24px 0 8px;">WhatsApp &amp; phone</h2>
+  <p style="font-size:18px;margin-bottom:8px;"><a href="{whatsapp_url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">{phone_display}</a></p>
+  <p style="color:var(--mid);font-size:14px;margin-bottom:24px;">Tap the number to open WhatsApp, or call directly. This is the fastest way to reach us about orders, sizing and product questions.</p>
+
+  <h2 style="font-family:var(--font-serif);font-size:24px;margin:24px 0 8px;">Email</h2>
+  <p style="font-size:18px;margin-bottom:8px;"><a href="mailto:{email}" style="color:inherit;text-decoration:underline;">{email}</a></p>
+  <p style="color:var(--mid);font-size:14px;margin-bottom:24px;">Best for wholesale, press and longer questions. We reply within one working day, Monday to Friday.</p>
+
+  <h2 style="font-family:var(--font-serif);font-size:24px;margin:24px 0 8px;">Hours</h2>
+  <p style="font-size:17px;margin-bottom:4px;">Monday &ndash; Friday, 09:00&ndash;17:00 SAST</p>
+  <p style="color:var(--mid);font-size:14px;margin-bottom:32px;">Weekend messages are answered first thing Monday. Public holidays follow the South African calendar.</p>
+
+  <h2 style="font-family:var(--font-serif);font-size:24px;margin:24px 0 8px;">Social</h2>
+  <p style="margin-bottom:24px;">
+    {f'<a href="{SITE["instagram"]}" target="_blank" rel="noopener" style="margin-right:16px;">Instagram</a>' if SITE.get("instagram") else ''}
+    {f'<a href="{SITE["facebook"]}" target="_blank" rel="noopener" style="margin-right:16px;">Facebook</a>' if SITE.get("facebook") else ''}
+    <a href="{SITE["shop_url"]}/contact-us" target="_blank" rel="noopener">Full contact form on the shop &rarr;</a>
+  </p>
+
+  <a href="{SITE["shop_url"]}" class="btn-primary" target="_blank" rel="noopener">Visit the Mira shop &rarr;</a>
+</div></section>'''
+    (out/'index.html').write_text(
+        shell(f'Contact Mira Accessories — Email, WhatsApp &amp; Phone (SA)',
+              f'Contact Mira Accessories — WhatsApp/phone {phone_display}, email {email}. South African team, Mon–Fri 09:00–17:00 SAST.',
+              '', '/contact/', html, posts,
+              extra=f'<script type="application/ld+json">{json.dumps(org_schema, ensure_ascii=False)}</script>'),
+        encoding='utf-8')
+    print('  Built: /contact/')
 
 
 def build_faq(posts, dist):
@@ -802,6 +859,7 @@ def build_extras(posts, dist):
     urls = [f'  <url><loc>{SITE["url"]}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>',
             f'  <url><loc>{SITE["url"]}/posts/</loc><changefreq>daily</changefreq><priority>0.9</priority></url>',
             f'  <url><loc>{SITE["url"]}/about/</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>',
+            f'  <url><loc>{SITE["url"]}/contact/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>',
             f'  <url><loc>{SITE["url"]}/faq/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>']
     for p in posts:
         img = p.get('image','')
@@ -996,6 +1054,7 @@ def build():
     build_cats(posts, DIST_DIR)
     build_tags(posts, DIST_DIR)
     build_about(posts, DIST_DIR)
+    build_contact(posts, DIST_DIR)
     build_faq(posts, DIST_DIR)
     build_feed(posts, DIST_DIR)
     build_extras(posts, DIST_DIR)
