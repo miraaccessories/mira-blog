@@ -7,9 +7,24 @@ Run: python3 scripts/build.py
 Output: dist/
 """
 
-import hashlib, json, os, re, shutil, sys
+import hashlib, json, os, re, shutil, subprocess, sys, urllib.parse
 from datetime import datetime
 from pathlib import Path
+
+
+def _git_last_modified(path: Path) -> str:
+    """Return YYYY-MM-DD of the most recent commit that touched `path`,
+    or empty string if git history isn't available (e.g. shallow clone
+    without the file's commit, or path is untracked)."""
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%cs", "--", str(path)],
+            cwd=str(Path(__file__).parent.parent),
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+        return (out.stdout or "").strip()
+    except Exception:
+        return ""
 
 
 def _file_hash(p):
@@ -45,6 +60,29 @@ SITE = {
     "instagram":   os.environ.get("MIRA_INSTAGRAM", "https://www.instagram.com/mira_accessories_za/"),
     "facebook":    os.environ.get("MIRA_FACEBOOK", "https://www.facebook.com/mira.accessories.za"),
     "youtube":     os.environ.get("MIRA_YOUTUBE",  "https://www.youtube.com/@mira_accessories_za"),
+
+    # Pinterest domain verification — paste the meta content value from
+    # pinterest.com/settings/claim (no <meta> tags, just the token).
+    "pinterest_verify": os.environ.get("MIRA_PINTEREST_VERIFY", ""),
+
+    # Newsletter — paste your Mailchimp embed URL (action=...) or ConvertKit
+    # form action URL. Leave empty to hide the signup block sitewide.
+    "newsletter_action": os.environ.get("MIRA_NEWSLETTER_ACTION", ""),
+    "newsletter_hidden_field_name":  os.environ.get("MIRA_NEWSLETTER_HIDDEN_NAME", ""),
+    "newsletter_hidden_field_value": os.environ.get("MIRA_NEWSLETTER_HIDDEN_VALUE", ""),
+
+    # Giscus comments — flip on Discussions on the repo, install the Giscus
+    # app, paste the four values from giscus.app/configurator. Leave any
+    # blank and comments stay hidden.
+    "giscus_repo":         os.environ.get("MIRA_GISCUS_REPO", ""),
+    "giscus_repo_id":      os.environ.get("MIRA_GISCUS_REPO_ID", ""),
+    "giscus_category":     os.environ.get("MIRA_GISCUS_CATEGORY", "Comments"),
+    "giscus_category_id":  os.environ.get("MIRA_GISCUS_CATEGORY_ID", ""),
+
+    # Site-wide promo banner (top of every page). Set to empty to hide.
+    "promo_banner_text":  os.environ.get("MIRA_PROMO_BANNER_TEXT",
+        "Free delivery on SA orders over R500 — Mon–Fri, dispatched in 24 hours"),
+    "promo_banner_link":  os.environ.get("MIRA_PROMO_BANNER_LINK", ""),
 }
 
 AUTHOR = {
@@ -52,7 +90,7 @@ AUTHOR = {
     "title": "Co-founder, Mira Accessories",
     "bio":   "Shaveta V Sahoo is the co-founder of Mira Accessories, South Africa's premium baby hair accessory brand. An engineer by training and a mom by calling, she designs accessories that are safe, gentle, and made to last — and writes for South African moms navigating the messy, magical years of raising little girls.",
     "byline_bio": "Mom to a little girl, engineer, and co-founder of Mira Accessories. Writing from Johannesburg about the small, sacred parts of raising a daughter.",
-    "url":   "/about/",
+    "url":   "/authors/shaveta-v-sahoo/",
     "image": "",
 }
 
@@ -112,8 +150,16 @@ def load_posts(src_dir=None, url_prefix="/posts/"):
         meta['tags']     = [t.strip() for t in meta.get('tags','').split(',') if t.strip()]
         meta['keywords'] = [k.strip() for k in meta.get('keywords','').split(',') if k.strip()]
         meta['featured'] = meta.get('featured','').strip().lower() in ('true','1','yes')
+        meta['popular']  = meta.get('popular','').strip().lower()  in ('true','1','yes')
         body = re.sub(r'<!--META\n.*?-->', '', raw, flags=re.DOTALL).strip()
         excerpt = meta.get('excerpt', re.sub(r'<[^>]+>','',body)[:160].strip()+'...')
+        # Auto-derived dateModified — uses git log to find the last commit
+        # that touched the file; falls back to file mtime when git history
+        # is unavailable. Result is used for BlogPosting dateModified and a
+        # visible "Last updated" line. Never older than the publish date.
+        last_mod = _git_last_modified(f) or datetime.fromtimestamp(f.stat().st_mtime).strftime('%Y-%m-%d')
+        published = meta.get('date','')
+        meta.setdefault('date_modified', last_mod if last_mod > published else published)
         posts.append({**meta, 'slug': f.stem, 'url': f'{url_prefix}{f.stem}/',
                       'body': body, 'excerpt': excerpt})
     posts.sort(key=lambda p: p.get('date',''), reverse=True)
@@ -190,6 +236,79 @@ def add_ids(html):
         return f'<h2 id="{slugify(txt)}">{m.group(1)}</h2>'
     return re.sub(r'<h2[^>]*>(.*?)</h2>', ai, html, flags=re.DOTALL)
 
+def share_block(post):
+    url = f'{SITE["url"]}{post["url"]}'
+    title = post.get('title','')
+    text = post.get('excerpt', title)
+    image = post.get('image','')
+    enc_url = urllib.parse.quote(url, safe='')
+    enc_title = urllib.parse.quote(title, safe='')
+    enc_text = urllib.parse.quote(text, safe='')
+    enc_image = urllib.parse.quote(image, safe='') if image else ''
+    btn_style = 'display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;color:inherit;text-decoration:none;font-size:13px;margin:0 6px 8px 0;background:#fff;'
+    return f'''<section class="post-share" aria-label="Share this article" style="margin:32px 0 8px;padding:18px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div style="font-size:13px;color:var(--mid);margin-bottom:10px;letter-spacing:0.04em;text-transform:uppercase;">Share with another SA mom</div>
+  <a href="https://wa.me/?text={enc_title}%20{enc_url}" target="_blank" rel="noopener" style="{btn_style}">WhatsApp</a>
+  <a href="https://www.pinterest.com/pin/create/button/?url={enc_url}&media={enc_image}&description={enc_title}" target="_blank" rel="noopener" style="{btn_style}">Pinterest</a>
+  <a href="https://www.facebook.com/sharer/sharer.php?u={enc_url}" target="_blank" rel="noopener" style="{btn_style}">Facebook</a>
+  <a href="mailto:?subject={enc_title}&body={enc_text}%0A%0A{enc_url}" style="{btn_style}">Email</a>
+  <button type="button" data-copy-link="{url}" style="{btn_style}cursor:pointer;font-family:inherit;">Copy link</button>
+</section>'''
+
+
+def newsletter_block():
+    if not SITE.get("newsletter_action"):
+        return ''
+    hidden = ''
+    if SITE.get("newsletter_hidden_field_name") and SITE.get("newsletter_hidden_field_value"):
+        hidden = (f'<input type="hidden" name="{esc(SITE["newsletter_hidden_field_name"])}" '
+                  f'value="{esc(SITE["newsletter_hidden_field_value"])}">')
+    return f'''<section class="newsletter-block" aria-label="Subscribe" style="margin:36px 0;padding:28px 24px;border:1px solid var(--border);border-radius:12px;background:var(--blush,#fdf4f4);">
+  <div style="font-family:var(--font-serif);font-size:22px;margin-bottom:6px;">Get the SA mom hair newsletter</div>
+  <p style="color:var(--mid);margin-bottom:14px;font-size:14px;">One email a fortnight. New posts, seasonal styling tips, and SA-mom-only Mira offers. Unsubscribe anytime.</p>
+  <form action="{esc(SITE["newsletter_action"])}" method="post" target="_blank" novalidate style="display:flex;gap:8px;flex-wrap:wrap;">
+    <input type="email" name="EMAIL" placeholder="your@email.co.za" required aria-label="Email address" style="flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:14px;">
+    {hidden}
+    <button type="submit" class="btn-primary" style="padding:10px 18px;">Subscribe</button>
+  </form>
+</section>'''
+
+
+def giscus_block(post):
+    if not (SITE.get("giscus_repo") and SITE.get("giscus_repo_id") and SITE.get("giscus_category_id")):
+        return ''
+    return f'''<section class="post-comments" aria-label="Comments" style="margin:48px 0;">
+  <h2 style="font-family:var(--font-serif);font-size:24px;margin-bottom:16px;">Comments</h2>
+  <p style="color:var(--mid);font-size:14px;margin-bottom:16px;">Sign in with GitHub to leave a comment. We read every one — and we'll never share your email with anyone.</p>
+  <script src="https://giscus.app/client.js"
+    data-repo="{esc(SITE["giscus_repo"])}"
+    data-repo-id="{esc(SITE["giscus_repo_id"])}"
+    data-category="{esc(SITE["giscus_category"])}"
+    data-category-id="{esc(SITE["giscus_category_id"])}"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="light"
+    data-lang="en"
+    data-loading="lazy"
+    crossorigin="anonymous"
+    async></script>
+</section>'''
+
+
+def popular_sidebar(posts, current_slug=None, limit=4):
+    pop = [p for p in posts if p.get('popular') and p['slug'] != current_slug][:limit]
+    if not pop:
+        return ''
+    items = ''.join(sidebar_post(p) for p in pop)
+    return f'''<div class="sidebar-widget">
+    <div class="sidebar-widget__title">Most popular</div>
+    {items}
+  </div>'''
+
+
 def search_idx(posts):
     idx = [{'title':p.get('title',''),'url':p.get('url',''),'excerpt':p.get('excerpt',''),
             'category':p.get('category',''),'tags':p.get('tags',[]),
@@ -214,8 +333,16 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
     year = datetime.now().year
 
     gsc  = f'<meta name="google-site-verification" content="{SITE["gsc_verify"]}">' if SITE.get("gsc_verify") else ''
+    pinv = f'<meta name="p:domain_verify" content="{SITE["pinterest_verify"]}">' if SITE.get("pinterest_verify") else ''
     ga4  = (f'<script async src="https://www.googletagmanager.com/gtag/js?id={SITE["ga4_id"]}"></script>'
             f'<script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments);}}gtag("js",new Date());gtag("config","{SITE["ga4_id"]}");</script>') if SITE.get("ga4_id") else ''
+    banner_text = SITE.get("promo_banner_text","").strip()
+    banner_link = SITE.get("promo_banner_link","").strip()
+    if banner_text:
+        inner = f'<a href="{banner_link}" style="color:inherit;text-decoration:none;">{esc(banner_text)} →</a>' if banner_link else esc(banner_text)
+        banner_html = f'<div class="promo-banner" role="region" aria-label="Site notice" style="background:var(--accent,#3c2a4d);color:#fff;text-align:center;font-size:13px;padding:8px 16px;letter-spacing:0.02em;">{inner}</div>'
+    else:
+        banner_html = ''
     return f'''<!DOCTYPE html>
 <html lang="{SITE["locale"]}">
 <head>
@@ -231,6 +358,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
 <meta name="geo.placename" content="South Africa">
 <meta http-equiv="content-language" content="en-ZA">
 {gsc}
+{pinv}
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="shortcut icon" type="image/png" href="/images/favicon-32.png">
@@ -255,6 +383,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
 {extra}
 </head>
 <body>
+{banner_html}
 <header class="site-header">
   <div class="site-header__inner">
     <a class="site-logo" href="/">
@@ -301,11 +430,12 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
   </div>
   <div class="footer-bottom">
     <span>© {year} Mira Accessories. All rights reserved.</span>
-    <span><a href="/faq/" style="color:inherit;">FAQ</a> · <a href="/about/" style="color:inherit;">About</a> · <a href="/contact/" style="color:inherit;">Contact</a> · <a href="{SITE["shop_url"]}/privacy-policy" style="color:inherit;">Privacy</a> · <a href="{SITE["shop_url"]}/terms-and-conditions" style="color:inherit;">Terms</a></span>
+    <span><a href="/faq/" style="color:inherit;">FAQ</a> · <a href="/authors/" style="color:inherit;">Authors</a> · <a href="/contact/" style="color:inherit;">Contact</a> · <a href="{SITE["shop_url"]}/privacy-policy" style="color:inherit;">Privacy</a> · <a href="{SITE["shop_url"]}/terms-and-conditions" style="color:inherit;">Terms</a></span>
   </div>
 </footer>
 <script>{search_idx(posts)}</script>
 <script src="/js/search.js?v={JS_HASH}"></script>
+<script src="/js/enhance.js?v={ENHANCE_HASH}" defer></script>
 </body>
 </html>'''
 
@@ -373,30 +503,60 @@ def build_home(posts, dist):
     print('  Built: index.html')
 
 
-def build_about(posts, dist):
-    out = dist/'about'
+def build_authors(posts, dist):
+    out = dist/'authors'
     out.mkdir(parents=True, exist_ok=True)
+    author_slug = slugify(AUTHOR["name"])
+    author_dir = out/author_slug
+    author_dir.mkdir(parents=True, exist_ok=True)
+
     person_schema = {"@context":"https://schema.org","@type":"Person",
         "name":AUTHOR["name"],"jobTitle":AUTHOR["title"],
         "description":AUTHOR["bio"],"url":f"{SITE['url']}{AUTHOR['url']}",
         "worksFor":{"@type":"Organization","name":"Mira Accessories","url":SITE["shop_url"]},
         "knowsAbout":["Baby hair care","Toddler hairstyling","South African parenting","Baby hair accessories"]}
-    html = f'''<section class="section"><div class="container" style="max-width:720px;">
-  <h1 style="font-family:var(--font-serif);font-size:40px;margin-bottom:8px;">About the author</h1>
-  <p style="color:var(--mid);margin-bottom:32px;">The person behind every Mira bow.</p>
-  <h2 style="font-family:var(--font-serif);font-size:28px;margin-bottom:8px;">{AUTHOR["name"]}</h2>
-  <p style="color:var(--mid);margin-bottom:24px;"><em>{AUTHOR["title"]}</em></p>
+
+    author_html = f'''<section class="section"><div class="container" style="max-width:720px;">
+  <nav class="breadcrumbs" aria-label="Breadcrumb" style="margin-bottom:24px;">
+    <a href="/">Home</a> <span>›</span>
+    <a href="/authors/">Authors</a> <span>›</span>
+    <span aria-current="page">{AUTHOR["name"]}</span>
+  </nav>
+  <h1 style="font-family:var(--font-serif);font-size:40px;margin-bottom:8px;">{AUTHOR["name"]}</h1>
+  <p style="color:var(--mid);margin-bottom:32px;"><em>{AUTHOR["title"]}</em></p>
   <p style="font-size:17px;line-height:1.75;margin-bottom:20px;">{esc(AUTHOR["bio"])}</p>
   <p style="font-size:17px;line-height:1.75;margin-bottom:32px;">Everything on this blog is written with one South African mom in mind at a time — from the first headband in the hospital to the first matching Mom &amp; Me set for a family wedding. If a tip here makes your morning easier, it's done its job.</p>
   <a href="{SITE["shop_url"]}" class="btn-primary" target="_blank" rel="noopener">Visit the Mira shop →</a>
+  <div class="section-header" style="margin-top:48px;">
+    <div><h2 class="section-title">Articles by {AUTHOR["name"]}</h2></div>
+    <a href="/posts/" class="view-all">All posts →</a>
+  </div>
+  <div class="post-grid">{"".join(post_card(p) for p in posts[:6])}</div>
 </div></section>'''
-    (out/'index.html').write_text(
-        shell(f'About {AUTHOR["name"]} — {SITE["name"]}',
+    (author_dir/'index.html').write_text(
+        shell(f'{AUTHOR["name"]} — {AUTHOR["title"]} | {SITE["name"]}',
               f'{AUTHOR["name"]} — {AUTHOR["title"]}. {AUTHOR["byline_bio"]}',
-              '', '/about/', html, posts,
+              '', AUTHOR["url"], author_html, posts,
               extra=f'<script type="application/ld+json">{json.dumps(person_schema, ensure_ascii=False)}</script>'),
         encoding='utf-8')
-    print('  Built: /about/')
+
+    index_html = f'''<section class="section"><div class="container" style="max-width:720px;">
+  <h1 style="font-family:var(--font-serif);font-size:40px;margin-bottom:8px;">Authors</h1>
+  <p style="color:var(--mid);margin-bottom:32px;">The South African moms writing for Mira Accessories Blog.</p>
+  <a class="post-card" href="{AUTHOR["url"]}" style="display:block;padding:24px;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:inherit;">
+    <h2 style="font-family:var(--font-serif);font-size:24px;margin-bottom:4px;">{AUTHOR["name"]}</h2>
+    <p style="color:var(--mid);margin-bottom:12px;"><em>{AUTHOR["title"]}</em></p>
+    <p style="font-size:15px;line-height:1.6;">{esc(AUTHOR["byline_bio"])}</p>
+    <span style="display:inline-block;margin-top:12px;color:var(--accent);">Read articles by {AUTHOR["name"].split()[0]} →</span>
+  </a>
+</div></section>'''
+    (out/'index.html').write_text(
+        shell(f'Authors — {SITE["name"]}',
+              f'The South African moms writing for Mira Accessories Blog. Real moms, real experience, real recommendations.',
+              '', '/authors/', index_html, posts),
+        encoding='utf-8')
+
+    print('  Built: /authors/ (index + 1 author page)')
 
 
 # 50-question FAQ — grouped, SA-localised. Keywords pulled from the validated
@@ -693,6 +853,7 @@ def build_posts(posts, dist):
 
         sidebar = f'''<aside class="sidebar">
   {t}
+  {popular_sidebar(posts, current_slug=post['slug'])}
   <div class="sidebar-widget">
     <div class="sidebar-widget__title">Recent articles</div>
     {"".join(sidebar_post(p) for p in recent)}
@@ -709,7 +870,7 @@ def build_posts(posts, dist):
         blog_post_schema = {"@context":"https://schema.org","@type":"BlogPosting",
             "mainEntityOfPage":{"@type":"WebPage","@id":f"{SITE['url']}{post['url']}"},
             "headline":post.get('title',''),"description":post.get('excerpt',''),
-            "image":post.get('image',''),"datePublished":post.get('date',''),"dateModified":post.get('date',''),
+            "image":post.get('image',''),"datePublished":post.get('date',''),"dateModified":post.get('date_modified', post.get('date','')),
             "inLanguage":SITE["locale"],
             "author":{"@type":"Person","name":AUTHOR["name"],"jobTitle":AUTHOR["title"],
                       "url":f"{SITE['url']}{AUTHOR['url']}","description":AUTHOR["byline_bio"]},
@@ -771,11 +932,12 @@ def build_posts(posts, dist):
   {f'<a href="/category/{cat_slug}/">{cat}</a> <span>›</span>' if cat else ''}
   <span aria-current="page">{esc(post.get("title",""))}</span>
 </div></nav>
+<div class="reading-progress" id="reading-progress" aria-hidden="true" style="position:fixed;top:0;left:0;height:3px;width:0;background:var(--accent,#c97b9d);z-index:9999;transition:width 0.15s ease-out;"></div>
 <header class="post-header">
   <span class="post-category-tag">{post.get("category","")}</span>
   <h1 class="post-header__title">{esc(post.get("title",""))}</h1>
   <div class="post-header__meta">
-    <span>By <a href="{AUTHOR["url"]}" rel="author">{AUTHOR["name"]}</a></span><span>{post.get("date","")}</span><span>{post.get("read_time","5 min read")}</span>
+    <span>By <a href="{AUTHOR["url"]}" rel="author">{AUTHOR["name"]}</a></span><span>Published {post.get("date","")}</span>{f'<span>Updated {post.get("date_modified","")}</span>' if post.get("date_modified") and post.get("date_modified") != post.get("date") else ''}<span>{post.get("read_time","5 min read")}</span>
   </div>
 </header>
 <div class="post-hero-image">
@@ -787,8 +949,11 @@ def build_posts(posts, dist):
     {body}
     {howto_visible_html}
     {faq_visible_html}
+    {share_block(post)}
     <hr class="divider">
     <div class="tag-cloud">{tags_h}</div>
+    {newsletter_block()}
+    {giscus_block(post)}
   </article>
   {sidebar}
 </div></div></section>
@@ -860,7 +1025,8 @@ def build_tags(posts, dist):
 def build_extras(posts, dist):
     urls = [f'  <url><loc>{SITE["url"]}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>',
             f'  <url><loc>{SITE["url"]}/posts/</loc><changefreq>daily</changefreq><priority>0.9</priority></url>',
-            f'  <url><loc>{SITE["url"]}/about/</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>',
+            f'  <url><loc>{SITE["url"]}/authors/</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>',
+            f'  <url><loc>{SITE["url"]}{AUTHOR["url"]}</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>',
             f'  <url><loc>{SITE["url"]}/contact/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>',
             f'  <url><loc>{SITE["url"]}/faq/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>']
     for p in posts:
@@ -902,6 +1068,7 @@ REDIRECTS = {
         '/posts/2026-03-09-headbands-newborns-safe-guide/',
     '/posts/2025-05-25-princess-party-hair-SA/':
         '/posts/2026-03-19-princess-party-hair-SA/',
+    '/about/': AUTHOR["url"],
 }
 
 
@@ -1042,10 +1209,11 @@ def build():
     if DIST_DIR.exists(): shutil.rmtree(DIST_DIR)
     DIST_DIR.mkdir(parents=True)
     shutil.copytree(STATIC_DIR, DIST_DIR, dirs_exist_ok=True)
-    global CSS_HASH, JS_HASH
+    global CSS_HASH, JS_HASH, ENHANCE_HASH
     CSS_HASH = _file_hash(STATIC_DIR / "css" / "main.css")
-    JS_HASH  = _file_hash(STATIC_DIR / "js" / "search.js")
-    print(f'  Copied static assets (css {CSS_HASH}, js {JS_HASH})')
+    JS_HASH      = _file_hash(STATIC_DIR / "js" / "search.js")
+    ENHANCE_HASH = _file_hash(STATIC_DIR / "js" / "enhance.js")
+    print(f'  Copied static assets (css {CSS_HASH}, js {JS_HASH}, enhance {ENHANCE_HASH})')
     posts = load_posts()
     print(f'  Loaded {len(posts)} posts')
     if not posts:
@@ -1055,7 +1223,7 @@ def build():
     build_posts(posts, DIST_DIR)
     build_cats(posts, DIST_DIR)
     build_tags(posts, DIST_DIR)
-    build_about(posts, DIST_DIR)
+    build_authors(posts, DIST_DIR)
     build_contact(posts, DIST_DIR)
     build_faq(posts, DIST_DIR)
     build_feed(posts, DIST_DIR)
