@@ -209,6 +209,7 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
         ('All Posts','/posts/'),('School Hair','/category/school-hair/'),
         ('Baby Care','/category/baby-care/'),('Gift Ideas','/category/gift-ideas/'),
         ('Mom &amp; Baby','/category/mom-baby/'),('Photoshoots','/category/photoshoots/'),
+        ('FAQ','/faq/'),('About','/about/'),('Contact','/contact/'),
     ])
     footer_cats = ''.join(f'<a href="/category/{slugify(c)}/">{c}</a>' for c in cats)
     year = datetime.now().year
@@ -295,9 +296,6 @@ def shell(title, desc, og_img, canonical, content, posts, extra=''):
       <a href="{SITE["shop_url"]}/category/gift-box-collection" target="_blank">Gift Boxes</a>
       <a href="{SITE["shop_url"]}/category/mom-me" target="_blank">Mom &amp; Me Sets</a>
     </div>
-  </div>
-  <div class="footer-disclaimer" style="border-top:1px solid var(--border);padding:16px 0;font-size:13px;color:var(--mid);text-align:center;line-height:1.5;">
-    <strong>A note from us:</strong> Our authors are SA moms sharing personal opinions and experiences, not medical, dermatological, or other professional experts. Nothing on this blog is medical advice. Please consult your paediatrician, dermatologist, or other qualified professional for guidance specific to your child.
   </div>
   <div class="footer-bottom">
     <span>© {year} Mira Accessories. All rights reserved.</span>
@@ -618,10 +616,18 @@ def build_faq(posts, dist):
         '50 honest answers for South African moms — on baby and toddler hair, '
         'clip and headband safety, school-day styling, and choosing accessories that last.</p>'
         '<p style="color:var(--mid);font-size:14px;margin-bottom:32px;">'
-        'Can\'t find your question? <a href="https://www.miraaccessories.co.za/contact" '
-        'target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">'
+        'Can\'t find your question? <a href="/contact/" '
+        'style="color:inherit;text-decoration:underline;">'
         'Get in touch</a> or <a href="/posts/" style="color:inherit;text-decoration:underline;">'
         'browse the blog</a>.</p>'
+        '<div class="faq-disclaimer" role="note" style="border:1px solid var(--border);'
+        'border-left:3px solid var(--accent,#c8869a);background:#fafafa;border-radius:6px;'
+        'padding:16px 18px;font-size:14px;color:var(--mid);line-height:1.6;margin-bottom:32px;">'
+        '<strong>A note from us:</strong> Our authors are SA moms sharing personal '
+        'opinions and experiences, not medical, dermatological, or other professional '
+        'experts. Nothing on this blog is medical advice. Please consult your '
+        'paediatrician, dermatologist, or other qualified professional for guidance '
+        'specific to your child.</div>'
         + ''.join(sections_html) +
         '<div style="margin-top:40px;padding:24px;background:#fafafa;border-radius:8px;text-align:center;">'
         '<p style="margin-bottom:14px;font-size:17px;">Looking for safe, soft, SA-made baby hair accessories?</p>'
