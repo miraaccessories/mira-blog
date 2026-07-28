@@ -518,8 +518,8 @@ FAQ_GROUPS = [
 def build_contact(posts, dist):
     out = dist/'contact'
     out.mkdir(parents=True, exist_ok=True)
-    phone_display = "+27 (0) 83 324 1095"
-    phone_e164 = "+27833241095"
+    phone_display = "+27 (0) 72 392 6144"
+    phone_e164 = "+27723926144"
     email = "support@miraaccessories.co.za"
     whatsapp_url = f"https://wa.me/{phone_e164.lstrip('+')}"
     org_schema = {"@context":"https://schema.org","@type":"Organization",
